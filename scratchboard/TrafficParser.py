@@ -3,11 +3,15 @@
 #Goal: From the converted text separate out the objects
 
 import pdftotext
+import Categorizer
+
+
 class Proposal:
     def __init__(self):
         self.action = "";
         self.object = "";
         self.description = "";
+        self.category = "";
 
 class ProposalMachine:
     ## The Proposal Machine Works as follows:
@@ -20,37 +24,46 @@ class ProposalMachine:
     #multiple description mode, wait for double line break before stopping
 
     ##however, an issue is that multiple actions and objects may share a description.
-    def __init__(self):
+    def __init__(self,training_set):
+        self.total=0
+        self.categorized= 0
         self.stage = 0
         self.currentProp = [Proposal()];
         self.completedProps = [];
+        self.categorizer = Categorizer.Categorizer(training_set)
     def StringList(self):
         s = [];
         for prop in self.completedProps:
-            currentstring = "Action: "+prop.action+"; Object: "+prop.object+"; description:"+prop.description
-            s.append(currentstring)
+            if(prop.category is "BLANK"):
+                currentstring = "Action: "+prop.action+"; Category: "+prop.category+"; Object: "+prop.object+"; description:"+prop.description
+                s.append(currentstring)
         return s
     def emptyCurrentProposition(self):
         for p in self.currentProp:
+            self.total +=1
+            p.action = p.action.strip()
+            p.object = p.object.strip()
+            p.description = p.description.strip()
+            p.category = self.categorizer.categorize(p.object)
+            if(not p.category is "BLANK"):
+                self.categorized +=1
             self.completedProps.append(p);
         self.currentProp = [Proposal()]
         self.stage = 0;
     def addDescription(self,section):
         for p in self.currentProp:
             p.description+=(" "+section);
-    def process(self, section,ln):
+    def process(self, section):
         working_section = section;
         if(self.stage == 0):
             found = self.find_action(working_section)
-            if(found):
-                print("found action line"+str(ln));
             return
         elif(self.stage == 1):
-            print("Checking for object at line"+str(ln))
+            #print("Checking for object at line"+str(ln))
             self.find_object(working_section)
         elif(self.stage == 2):
-            print("checking for description at line"+str(ln))
-            self.find_description(working_section,ln)
+            #print("checking for description at line"+str(ln))
+            self.find_description(working_section)
 
 
 
@@ -73,11 +86,11 @@ class ProposalMachine:
         else:
             self.addDescription(section)
             self.stage = 2;
-    def find_description(self,section,ln):
+    def find_description(self,section):
         firstWord = section.split(" ")[0];
         if(firstWord in ["ESTABLISH","RESCIND","be", "Items"]):
             self.emptyCurrentProposition()
-            self.process(section,ln)
+            self.process(section)
         elif(not section.isspace()):
             self.addDescription(section)
 
@@ -86,15 +99,14 @@ class ProposalMachine:
 def main():
     text = pdftotext.convert_pdf_to_txt("Engineering_Public_Hearing_example.pdf")
     sections = text.split("\n")
-    count = 0;
-    pmachine = ProposalMachine()
+    pmachine = ProposalMachine("Resolution-Detail-of-08_02_2017.csv")
+    #print(str(pmachine.categorizer.reference_dict))
     for sect in sections:
-        if(pmachine.process(sect,count)):
-            pmachine.process(sect,count)
-        count+=1;
+        if(pmachine.process(sect)):
+            pmachine.process(sect)
     for p in pmachine.StringList():
         print(p+"\n")
-    print("final count"+str(len(pmachine.completedProps)))
+    print("categorized: "+str(pmachine.categorized)+"/"+str(pmachine.total))
 
 if __name__ == '__main__':
     main()

@@ -1,0 +1,44 @@
+# -*- coding: utf-8 -*-
+
+import csv
+class Categorizer:
+    def __init__(self, reference_file):
+        fp = open(reference_file, "r");
+        entries=csv.reader(fp)
+        type_dict={}
+        for row in entries:
+            print(row[6]+row[5])
+            type = row[6]
+            category = row[5]
+            if(type in type_dict):
+                if(category in type_dict[type]):
+                    type_dict[type][category] +=1
+                else:
+                    type_dict[type][category] = 1
+            else:
+                type_dict[type]={category:1}
+        for type in type_dict:
+            type_dict[type] = max(type_dict[type], key = type_dict[type].get).title()
+        self.reference_dict= type_dict;
+    def categorize(self,type):
+        if(type in self.reference_dict):
+            return self.reference_dict[type]
+        if(self.wordTest(['ZONE','LOADING','PARKING','TOW-AWAY','BOARDING'],type)):
+            return "Parking"
+        if(self.wordTest(['BIKE','BICYCLE'],type)):
+            return "Biking"
+        if(self.wordTest(['SIGNAL','TURN','SIGNS',],type)):
+            return "Traffic"
+        return "BLANK"
+    def wordTest(self,wordList,string):
+        return any(word in string for word in wordList)
+
+def main():
+    c = Categorizer("Resolution-Detail-of-08_02_2017.csv");
+    print(c.reference_dict)
+    print(c.categorize("RED ZONE"))
+    print(c.categorize("CLASS II BIKE LANE"))
+
+
+if __name__ == '__main__':
+    main()
