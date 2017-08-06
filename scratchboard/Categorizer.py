@@ -2,6 +2,7 @@
 
 import csv
 class Categorizer:
+    #initialize and train the Categorizer
     def __init__(self, reference_file):
         fp = open(reference_file, "r");
         entries=csv.reader(fp)
@@ -21,8 +22,10 @@ class Categorizer:
             type_dict[type] = max(type_dict[type], key = type_dict[type].get).title()
         self.reference_dict= type_dict;
     def categorize(self,type):
-        if(type in self.reference_dict):
+        if(type in self.reference_dict):##Test to see if we already have this category
             return self.reference_dict[type]
+        ##Switch to keyword test)
+        ##todo: find better way of generating keyword lists than by hand
         if(self.wordTest(['ZONE','LOADING','PARKING','TOW-AWAY','BOARDING'],type)):
             return "Parking"
         if(self.wordTest(['BIKE','BICYCLE'],type)):
@@ -30,6 +33,7 @@ class Categorizer:
         if(self.wordTest(['SIGNAL','TURN','SIGNS',],type)):
             return "Traffic"
         return "BLANK"
+    #Helper to test if any of words in string are in the wordList
     def wordTest(self,wordList,string):
         return any(word in string for word in wordList)
 
